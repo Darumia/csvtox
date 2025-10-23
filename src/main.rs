@@ -1,10 +1,12 @@
 use csv::ReaderBuilder;
 use serde::Deserialize;
-use std::{fs, path::PathBuf};
+use std::{collections::HashMap, fs, path::PathBuf};
 
 #[derive(Deserialize)]
 struct AppConfig{
     watch_path:String,
+    root_name: Option<String>,
+    mappings: HashMap<String, String>,
 }
 
 fn load_config() -> AppConfig {
@@ -12,13 +14,17 @@ fn load_config() -> AppConfig {
     toml::from_str(&content).expect("TOML is invalid")
 }
 
-fn convert_csv(file_path: &PathBuf) {
+fn convert_csv(file_path: &PathBuf, config: &AppConfig) {
     let mut rdr = ReaderBuilder::new()
         .flexible(true)
         .from_path(file_path)
         .expect("Unable to read CSV file");
     let headers = rdr.headers().unwrap().clone();
     println!("{:?}", headers);
+    for header in &headers {
+        let mapped_header = config.mappings.get(header).unwrap();
+        println!("{:?}", mapped_header);
+    }
 }
 
 fn files_in_input(){
@@ -27,7 +33,8 @@ fn files_in_input(){
     for path in x {
         //println!("{:?}",path.unwrap().path().display());
         let file_path = path.unwrap().path();
-        convert_csv(&file_path);
+        let config = load_config();
+        convert_csv(&file_path, &config);
     }
 }
 
