@@ -40,9 +40,9 @@ fn convert_csv(file_path: &PathBuf, config: &AppConfig) {
 }
 
 fn insert_in_root(root: &mut Value, key: &str, value: &str) {
-    // TODO Somehow im now missing column 1 and 2 and the values.
     let mut root = root;
     let header_parts: Vec<&str> = key.split('.').collect();
+    println!("{:?}", header_parts);
 
     for (i, key) in header_parts.iter().enumerate() {
         //check if its the last, then it needs to add value and not just a new json
@@ -52,8 +52,10 @@ fn insert_in_root(root: &mut Value, key: &str, value: &str) {
             }
             println!("Last Key {}", key);
         } else {
-            if let Some(obj) = root.as_object_mut() {
-                obj.insert((*key).to_string(), json!({}));
+            if !root.get(*key).is_some() {
+                if let Some(obj) = root.as_object_mut() {
+                    obj.insert((*key).to_string(), json!({}));
+                }
             }
             // Make sure to get the root as the new made root to nest it.
             root = root.get_mut(*key).unwrap();
