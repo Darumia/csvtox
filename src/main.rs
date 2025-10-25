@@ -16,41 +16,37 @@ fn load_config() -> AppConfig {
     toml::from_str(&content).expect("TOML is invalid")
 }
 
-fn convert_csv(file_path: &PathBuf, config: &AppConfig) {
+fn convert_csv(file_path: &PathBuf, config: &AppConfig){
     let mut rdr = ReaderBuilder::new()
         .flexible(true)
         .from_path(file_path)
         .expect("Unable to read CSV file");
     let headers = rdr.headers().unwrap().clone();
-    let mut records = Vec::new();
 
     for res in rdr.records() {
         let record = res.unwrap();
         let mut root = json!({});
-
         for (i, value) in record.iter().enumerate() {
             let header = &headers[i];
             let mapped_key = config.mappings.get(header).unwrap(); // TODO proper error handling
             // Function here to make the actual record and add to root.
             insert_in_root(&mut root, mapped_key, value);
         }
-        records.push(root)
+        let root2 = root.clone();
+        let json = serde_json::to_string_pretty(&root2).unwrap();
+        fs::write(format!("{}.json", "placeholder"), &json).unwrap();
     }
-    println!("{:?}", records);
 }
 
 fn insert_in_root(root: &mut Value, key: &str, value: &str) {
     let mut root = root;
     let header_parts: Vec<&str> = key.split('.').collect();
-    println!("{:?}", header_parts);
-
     for (i, key) in header_parts.iter().enumerate() {
         //check if its the last, then it needs to add value and not just a new json
         if i == header_parts.len() - 1 {
             if let Some(obj) = root.as_object_mut() {
                 obj.insert((*key).to_string(), json!(value));
             }
-            println!("Last Key {}", key);
         } else {
             if !root.get(*key).is_some() {
                 if let Some(obj) = root.as_object_mut() {
